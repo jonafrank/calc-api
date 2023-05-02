@@ -1,6 +1,6 @@
 class Validation:
     @staticmethod
-    def validate_create_user(body):
+    def validate_user(body):
         errors = []
 
         if 'data' not in body:

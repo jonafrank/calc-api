@@ -9,7 +9,8 @@ from src.services.users import UserService
 app = Flask(__name__)
 app.json.sort_keys = False
 app.json.mimetype = 'application/vnd.api+json'
-app.config['APPLICATION_ROOT'] = "/api/v{version}".format({"version": os.getenv('API_VERSION')})
+
+API_V1 = "v1"
 
 if os.getenv('FLASK_ENV') == 'development':
     app.config['DEBUG'] = True
@@ -25,12 +26,12 @@ USERS_TABLE = os.environ['USERS_TABLE']
 response_builder = ResponseBuilder(request)
 
 
-@app.route('/')
+@app.route('/api/v1/')
 def index():
     return 'Welcome to Calc'
 
 
-@app.route('/users/<string:user_id>')
+@app.route('/api/v1/users/<string:user_id>')
 def get_user(user_id):
     result = dynamodb_client.get_item(
         TableName=USERS_TABLE, Key={'userId': {'S': user_id}}
@@ -44,13 +45,12 @@ def get_user(user_id):
     )
 
 
-@app.route('/users', methods=['POST'])
+@app.route('/api/v1/users', methods=['POST'])
 def create_user():
     body = request.get_json()
-    errors = Validation.validate_create_user(body)
+    errors = Validation.validate_user(body)
     if len(errors):
         return response_builder.validation_errors(errors)
-    body = request.json
     service = UserService()
     try:
         cognito_user = service.create_user(body)
@@ -66,6 +66,24 @@ def create_user():
         return response_builder.server_error(e, os.getenv('FLASK_ENV'))
 
 
+@app.route('/api/v1/users/tokens', methods=['POST'])
+def get_auth():
+    body = request.get_json()
+    errors = Validation.validate_user(body)
+
+    if len(errors):
+        return response_builder.validation_errors(errors)
+    service = UserService()
+    try:
+        resp = service.login_attempt(body, os.getenv('user_pool_id'), os.getenv('client_id'))
+        return response_builder.login_success(
+            resp['AuthenticationResult']['IdToken'],
+            resp['AuthenticationResult']['ExpiresIn'])
+    except service.client.exceptions.NotAuthorizedException:
+        return response_builder.invalid_credentials()
+    except Exception as e:
+        return response_builder.server_error(e, os.getenv('FLASK_ENV'))
+
 @app.errorhandler(404)
 def resource_not_found(e):
-    return make_response(jsonify(error='Not found!'), 404)
+    return response_builder.not_found('Path not found in API')

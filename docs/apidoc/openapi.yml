@@ -1,0 +1,151 @@
+openapi: 3.0.3
+info:
+  title: "JobberWocky API documentation"
+  termsOfService: http://swagger.io/terms/
+  version: 1.0.0
+  contact:
+    email: jonafrank@gmail.com
+
+servers:
+  - url: https://pbqnjc55c3.execute-api.us-east-1.amazonaws.com/{basePath}
+    description: "The server for the API"
+    variables:
+      basePath: api/v1
+paths:
+  /users:
+    post:
+      summary: Creates a new User
+      requestBody:
+        required: true
+        content:
+          "application/vnd.api+json":
+            schema:
+              $ref: "#/components/schemas/UserRequest"
+      responses:
+        201:
+          description: Created
+          content:
+            "application/vnd.api+json":
+              schema:
+                $ref: "#/components/schemas/UserCreated"
+        400:
+          description: Bad Request
+          content:
+            "application/vnd.api+json":
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /users/tokens:
+    post:
+      summary: Creates a new Access Token for authenticated requests.
+      requestBody:
+        required: true
+        content:
+           "application/vnd.api+json":
+             schema:
+               $ref: "#/components/schemas/UserRequest"
+      responses:
+        200:
+          description: Success
+          content:
+            "application/vnd.api+json":
+              schema:
+                $ref: "#/components/schemas/LoginSuccess"
+        400:
+          description: Bad Request
+          content:
+            "application/vnd.api+json":
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        401:
+          description: Unauthorized
+          content:
+            "application/vnd.api+json":
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    UserRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          required: true
+          properties:
+            username:
+              type: string
+              required: true
+            password:
+              type: string
+              required: true
+    UserCreated:
+      type: object
+      properties:
+        data:
+          type: object
+          required: true
+          properties:
+            type:
+              type: string
+              required: true
+            id:
+              type: string
+              required: true
+            attributes:
+              type: object
+              required: true
+              properties:
+                username:
+                  type: string
+                  required: true
+                status:
+                  type: string
+                  required: true
+    LoginSuccess:
+      type: object
+      properties:
+        data:
+          type: object
+          required: true
+          properties:
+            type:
+              type: string
+              required: true
+            id:
+              type: string
+              required: true
+            attributes:
+              type: object
+              required: true
+              properties:
+                access_token:
+                  type: string
+                  required: true
+                expires_in:
+                  type: integer
+                  required: true
+    ErrorResponse:
+      type: object
+      properties:
+        errors:
+          type: array
+          required: true
+          items:
+            type: object
+            properties:
+              status:
+                type: integer
+                required: true
+              title:
+                type: string
+                required: true
+              detail:
+                type: string
+                required: true
+              meta:
+                type: object
+                required: false
+                properties:
+                  json_api_link:
+                    type: string
+                    required: false

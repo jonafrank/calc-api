@@ -96,3 +96,20 @@ class TestResponseBuilder(TestCase):
             body = resp.get_json()
             self.assertTrue('errors' in body)
             self.assertEqual(len(body['errors']), 2)
+
+    def test_login_success(self):
+        with app.app_context():
+            response_builder = ResponseBuilder(request)
+            resp = response_builder.login_success('fake.token', 18000)
+            body = {
+                'data': {
+                    'type': 'tokens',
+                    'id': 'fake',
+                    'attributes': {
+                        'access_token': 'fake.token',
+                        'expires_in': 18000
+                    }
+                }
+            }
+            self.assertEqual(resp.status_code, 401)
+            self.assertEqual(resp.get_json(), body)
