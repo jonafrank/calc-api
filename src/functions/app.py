@@ -84,6 +84,7 @@ def get_auth():
     except Exception as e:
         return response_builder.server_error(e, os.getenv('FLASK_ENV'))
 
+
 @app.errorhandler(404)
 def resource_not_found(e):
     return response_builder.not_found('Path not found in API')
