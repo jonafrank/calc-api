@@ -1,6 +1,7 @@
 from unittest import TestCase
 from flask import Flask, request
 from src.utils.response_builder import ResponseBuilder
+from src.model.operation import Operation
 
 app = Flask(__name__)
 app.json.sort_keys = False
@@ -110,6 +111,89 @@ class TestResponseBuilder(TestCase):
                         'expires_in': 18000
                     }
                 }
+            }
+            self.assertEqual(resp.status_code, 401)
+            self.assertEqual(resp.get_json(), body)
+
+    def test_operation_list(self):
+        with app.app_context():
+            operation = Operation('addition', 10, 'someid')
+            response_builder = ResponseBuilder(request)
+            resp = response_builder.operation_list([operation])
+            body = {
+                'data': [
+                    {
+                        'type': 'operations',
+                        'id': 'someid',
+                        'attributes': {
+                            'type': 'addition',
+                            'cost': 10
+                        }
+                    }
+                ]
+            }
+            self.assertEqual(resp.get_json(), body)
+
+    def test_no_token_response(self):
+        with app.app_context():
+            response_builder = ResponseBuilder(request)
+            resp = response_builder.no_token_response()
+            body = {
+                'errors': [
+                    {
+                        'status': 401,
+                        'title': 'Not Authorized',
+                        'detail': 'Authentication token missing'
+                    }
+                ]
+            }
+            self.assertEqual(resp.status_code, 401)
+            self.assertEqual(resp.get_json(), body)
+
+    def test_invalid_token(self):
+        with app.app_context():
+            response_builder = ResponseBuilder(request)
+            resp = response_builder.invalid_token()
+            body = {
+                'errors': [
+                    {
+                        'status': 403,
+                        'title': 'Forbidden',
+                        'detail': 'Invalid or expired Access Token'
+                    }
+                ]
+            }
+            self.assertEqual(resp.status_code, 403)
+            self.assertEqual(resp.get_json(), body)
+
+    def test_invalid_api_key(self):
+        with app.app_context():
+            response_builder = ResponseBuilder(request)
+            resp = response_builder.invalid_api_key()
+            body = {
+                'errors': [
+                    {
+                        'status': 403,
+                        'title': 'Forbidden',
+                        'detail': 'Invalid Api Key'
+                    }
+                ]
+            }
+            self.assertEqual(resp.status_code, 403)
+            self.assertEqual(resp.get_json(), body)
+
+    def test_no_api_keu(self):
+        with app.app_context():
+            response_builder = ResponseBuilder(request)
+            resp = response_builder.no_api_key()
+            body = {
+                'errors': [
+                    {
+                        'status': 401,
+                        'title': 'Not Authorized',
+                        'detail': 'X-Api-Key Header missing'
+                    }
+                ]
             }
             self.assertEqual(resp.status_code, 401)
             self.assertEqual(resp.get_json(), body)

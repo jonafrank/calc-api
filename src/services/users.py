@@ -41,3 +41,7 @@ class UserService:
             }
         )
         return result
+
+    def get_user(self, token):
+        result = self.client.get_user(AccessToken=token)
+        return result

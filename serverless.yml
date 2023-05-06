@@ -3,7 +3,7 @@ service: truenorth-calc-api
 frameworkVersion: '3'
 
 custom:
-  tableName: 'users-table-${sls:stage}'
+  calcTableName: 'CalcTable-${sls:stage}'
   wsgi:
     app: src/functions/app.app
 
@@ -11,32 +11,35 @@ package:
   exclude:
     - tests
     - docs
-
+useDotenv: true
 provider:
   name: aws
   runtime: python3.9
-
   environment:
-    USERS_TABLE: ${self:custom.tableName}
+    CALC_TABLE: ${self:custom.calcTableName}
+    APP_STAGE: ${sls:stage}
   iam:
     role:
       statements:
-#        - Effect: Allow
-#          Action:
-#            - dynamodb:Query
-#            - dynamodb:Scan
-#            - dynamodb:GetItem
-#            - dynamodb:PutItem
-#            - dynamodb:UpdateItem
-#            - dynamodb:DeleteItem
-#          Resource:
-#            - Fn::GetAtt: [ UsersTable, Arn ]
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:BatchWriteItem
+          Resource:
+            - Fn::GetAtt: [ CalcTable, Arn ]
         - Effect: Allow
           Action:
             - cognito-idp:AdminInitiateAuth
-#            - cognito-idp:AdminCreateUser
-#            - cognito-idp:AdminSetUserPassword
           Resource: "*"
+        - Effect: Allow
+          Action:
+            - secretsmanager:GetSecretValue
+          Resource: ${env:SECRET_ARN}
 functions:
   api:
     handler: wsgi_handler.handler
@@ -56,6 +59,9 @@ functions:
       - cognitoUserPool:
           pool: CalcUserPool
           trigger: PreSignUp
+  setUpDatabase:
+    handler: src/functions/set_up_database.set_up_database
+
 plugins:
   - serverless-wsgi
   - serverless-python-requirements
@@ -88,27 +94,45 @@ resources:
         IdTokenValidity: 5
         ExplicitAuthFlows:
           - "ADMIN_NO_SRP_AUTH"
+    CalcTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: ClassName
+            AttributeType: S
+          - AttributeName: OpId
+            AttributeType: S
+          - AttributeName: UserId
+            AttributeType: S
+          - AttributeName: RecordId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: ClassName
+            KeyType: HASH
+          - AttributeName: RecordId
+            KeyType: RANGE
+        TableName: ${self:custom.calcTableName}
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        LocalSecondaryIndexes:
+          - IndexName: ClassNameUserId
+            Projection:
+              ProjectionType: ALL
+            KeySchema:
+              - AttributeName: ClassName
+                KeyType: HASH
+              - AttributeName: UserId
+                KeyType: RANGE
+          - IndexName: ClassNameOpId
+            Projection:
+              ProjectionType: ALL
+            KeySchema:
+              - AttributeName: ClassName
+                KeyType: HASH
+              - AttributeName: OpId
+                KeyType: RANGE
 
-#  extensions:
-#    CognitoUserPoolCalcUserPool:
-#      Prop
-#    ApiLambdaFunction:
-#      DependsOn: CalcUserClient
-#    PreSignupLambdaFunction:
-#      DependsOn: CalcUserClient
-#    UsersTable:
-#      Type: AWS::DynamoDB::Table
-#      Properties:
-#        AttributeDefinitions:
-#          - AttributeName: userId
-#            AttributeType: S
-#        KeySchema:
-#          - AttributeName: userId
-#            KeyType: HASH
-#        ProvisionedThroughput:
-#          ReadCapacityUnits: 1
-#          WriteCapacityUnits: 1
-#        TableName: ${self:custom.tableName}
 
 
 

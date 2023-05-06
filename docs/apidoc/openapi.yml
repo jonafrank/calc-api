@@ -1,26 +1,31 @@
 openapi: 3.0.3
 info:
-  title: "JobberWocky API documentation"
-  termsOfService: http://swagger.io/terms/
   version: 1.0.0
-  contact:
-    email: jonafrank@gmail.com
+  title: Calc API
+  description: Calc api for truenorth challenge
 
 servers:
-  - url: https://pbqnjc55c3.execute-api.us-east-1.amazonaws.com/{basePath}
-    description: "The server for the API"
+  - description: The server for the API
+    url: https://pbqnjc55c3.execute-api.us-east-1.amazonaws.com/{basePath}
     variables:
-      basePath: api/v1
+      basePath:
+        default: api/v1
+
 paths:
   /users:
     post:
-      summary: Creates a new User
+      summary: Creates a New User
+      parameters:
+        - name: X-Api-Key
+          in: header
+          description: Api Key provided in order to integrate Apps
+          required: true
       requestBody:
-        required: true
         content:
           "application/vnd.api+json":
             schema:
               $ref: "#/components/schemas/UserRequest"
+        description: "User to Add to the system"
       responses:
         201:
           description: Created
@@ -28,15 +33,18 @@ paths:
             "application/vnd.api+json":
               schema:
                 $ref: "#/components/schemas/UserCreated"
-        400:
-          description: Bad Request
-          content:
-            "application/vnd.api+json":
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
   /users/tokens:
     post:
       summary: Creates a new Access Token for authenticated requests.
+      parameters:
+        - name: X-Api-Key
+          in: header
+          description: Api Key provided in order to integrate Apps
+          required: true
       requestBody:
         required: true
         content:
@@ -44,7 +52,7 @@ paths:
              schema:
                $ref: "#/components/schemas/UserRequest"
       responses:
-        200:
+        201:
           description: Success
           content:
             "application/vnd.api+json":
@@ -52,16 +60,32 @@ paths:
                 $ref: "#/components/schemas/LoginSuccess"
         400:
           description: Bad Request
-          content:
-            "application/vnd.api+json":
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
         401:
           description: Unauthorized
+
+  /operations:
+    get:
+      summary: Retrieves a list of valid operations.
+      security:
+        - JWT: []
+      parameters:
+        - name: X-Api-Key
+          in: header
+          description: Api Key provided in order to integrate Apps
+          required: true
+      responses:
+        200:
+          description: Success
           content:
             "application/vnd.api+json":
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/OperationsSuccess"
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+
+
 
 components:
   schemas:
@@ -124,28 +148,31 @@ components:
                 expires_in:
                   type: integer
                   required: true
-    ErrorResponse:
+    OperationsSuccess:
       type: object
       properties:
-        errors:
+        data:
           type: array
           required: true
           items:
-            type: object
             properties:
-              status:
-                type: integer
-                required: true
-              title:
+              type:
                 type: string
-                required: true
-              detail:
-                type: string
-                required: true
-              meta:
+              id:
+                type:
+                  string
+              attributes:
                 type: object
-                required: false
                 properties:
-                  json_api_link:
+                  type:
                     type: string
-                    required: false
+                  cost:
+                    type: integer
+
+
+  securitySchemes:
+    JWT:
+      type: http
+      bearerFormat: bearer
+      description: Access token provided by POST /users/tokens
+      scheme: Bearer

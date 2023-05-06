@@ -3,7 +3,6 @@ from flask import make_response
 
 
 class ResponseBuilder:
-
     def __init__(self, request):
         self.request = request
         self.content_type = 'application/vnd.api+json'
@@ -115,5 +114,83 @@ class ResponseBuilder:
             ]
         }
         resp = make_response(body)
+        resp.headers['Content-Type'] = self.content_type
+        return resp
+
+    def operation_list(self, operations):
+        body = {
+            'data': []
+        }
+
+        for op in operations:
+            body['data'].append({
+                'type': 'operations',
+                'id': op.operation_id,
+                'attributes': {
+                    'type': op.operation_type,
+                    'cost': op.cost
+                }
+            })
+        resp = make_response(body)
+        resp.headers['Content-Type'] = self.content_type
+        return resp
+
+    def no_token_response(self):
+        body = {
+            'errors': [
+                {
+                    'status': 401,
+                    'title': 'Not Authorized',
+                    'detail': 'Authentication token missing'
+                }
+            ]
+        }
+        resp = make_response(body)
+        resp.status_code = 401
+        resp.headers['Content-Type'] = self.content_type
+        return resp
+
+    def invalid_token(self):
+        body = {
+            'errors': [
+                {
+                    'status': 403,
+                    'title': 'Forbidden',
+                    'detail': 'Invalid or expired Access Token'
+                }
+            ]
+        }
+        resp = make_response(body)
+        resp.status_code = 403
+        resp.headers['Content-Type'] = self.content_type
+        return resp
+
+    def invalid_api_key(self):
+        body = {
+            'errors': [
+                {
+                    'status': 403,
+                    'title': 'Forbidden',
+                    'detail': 'Invalid Api Key'
+                }
+            ]
+        }
+        resp = make_response(body)
+        resp.status_code = 403
+        resp.headers['Content-Type'] = self.content_type
+        return resp
+
+    def no_api_key(self):
+        body = {
+            'errors': [
+                {
+                    'status': 401,
+                    'title': 'Not Authorized',
+                    'detail': 'X-Api-Key Header missing'
+                }
+            ]
+        }
+        resp = make_response(body)
+        resp.status_code = 401
         resp.headers['Content-Type'] = self.content_type
         return resp
