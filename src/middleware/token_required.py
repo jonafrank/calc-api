@@ -15,9 +15,9 @@ def token_required(f):
         try:
             user_service = UserService()
             current_user = user_service.get_user(token)
+
             return f(current_user, *args, **kwargs)
         except user_service.client.exceptions.NotAuthorizedException as e:
-
             abort(403, 'INVALID_TOKEN')
 
     return decorated

@@ -1,3 +1,4 @@
+import json
 from functools import wraps
 from flask import request, abort
 from src.services.secret_manager import get_api_key
@@ -13,8 +14,10 @@ def api_key_required(f):
             abort(401, 'NO_API_KEY')
 
         response = get_api_key()
-        api_key = response['SecretString'].split(':')
-        if api_key_header != api_key:
+        # secret = json.response['SecretString'
+        secret = json.loads(response['SecretString'])
+        print('API KEY', secret)
+        if api_key_header != secret['API_KEY']:
             abort(403, 'INVALID_API_KEY')
         return f(*args, **kwargs)
 

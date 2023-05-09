@@ -5,41 +5,22 @@ from src.model.operation import Operation
 
 class TestOperationRepository(TestCase):
 
-    @mock.patch('src.model.operation_repository.boto3.client')
-    def test_get_operations(self, mock_boto_client):
-        mock_client = mock.Mock()
-        mock_boto_client.return_value = mock_client
+    def test_get_operations(self):
+        operations = OperationRepository.get_operations()
+        self.assertEqual(len(operations), 6)
+        for operation in operations:
+            self.assertIsInstance(operation, Operation)
 
-        mock_client.query.return_value = {
-            'Items': [
-                {
-                    'OperationType': {'S': 'addition'},
-                    'OperationCost': {'N': '10'},
-                    'OpId': {'S': 'someid'}
-                }
-            ]
-        }
+    def test_get_operation(self):
+        operation = OperationRepository.get_operation(1)
+        self.assertEqual(operation.operation_id, 1)
+        self.assertEqual(operation.operation_type, 'addition')
+        # Cost is not tested to ensure that it can be updated without change the test
 
-        operations_repository = OperationRepository()
-        result = operations_repository.get_operations()
+    @mock.patch('src.model.operation_repository.abort')
+    def test_get_operation_fail(self, mock_flask_abort):
+        mock_abort = mock.Mock()
+        mock_flask_abort.return_value = mock_abort
+        operation = OperationRepository.get_operation(300)
+        mock_flask_abort.assert_called_once_with(404, 'OPERATION_NOT_FOUND')
 
-        mock_client.query.assert_called_once_with(
-            TableName=None,
-            Select='SPECIFIC_ATTRIBUTES',
-            ProjectionExpression='OpId,OperationType,OperationCost',
-            ExpressionAttributeValues={
-                ':class': {
-                    'S': 'Operation'
-                }
-            },
-            KeyConditionExpression='ClassName = :class'
-        )
-
-        expected_operation = Operation('addition', 10, 'someid')
-        expected_result = [
-            expected_operation
-        ]
-
-        self.assertEqual(result[0].operation_id, expected_result[0].operation_id)
-        self.assertEqual(result[0].operation_type, expected_result[0].operation_type)
-        self.assertEqual(result[0].cost, expected_result[0].cost)

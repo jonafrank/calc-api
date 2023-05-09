@@ -1,4 +1,4 @@
-service: truenorth-calc-api
+service: calculator-api-truenorth
 
 frameworkVersion: '3'
 
@@ -9,12 +9,19 @@ custom:
 
 package:
   exclude:
-    - tests
-    - docs
+    - tests/**
+    - docs/**
+    - node_modules/**
+    - venv/**
+    - .coverage
+    - htmlcov/**
+
 useDotenv: true
+
 provider:
   name: aws
   runtime: python3.9
+  region: us-east-1
   environment:
     CALC_TABLE: ${self:custom.calcTableName}
     APP_STAGE: ${sls:stage}
@@ -32,6 +39,7 @@ provider:
             - dynamodb:BatchWriteItem
           Resource:
             - Fn::GetAtt: [ CalcTable, Arn ]
+            - arn:aws:dynamodb:${self:provider.region}:*:table/CalcTable-*/index/UserIdDate
         - Effect: Allow
           Action:
             - cognito-idp:AdminInitiateAuth
@@ -40,6 +48,7 @@ provider:
           Action:
             - secretsmanager:GetSecretValue
           Resource: ${env:SECRET_ARN}
+
 functions:
   api:
     handler: wsgi_handler.handler
@@ -48,6 +57,7 @@ functions:
       client_id: { Ref: CalcUserClient }
       FLASK_ENV: development
       API_VERSION: 1
+      USER_INITIAL_BALANCE: 100
     dependsOn:
       - CognitoUserPoolCalcUserPool
     events:
@@ -59,8 +69,6 @@ functions:
       - cognitoUserPool:
           pool: CalcUserPool
           trigger: PreSignUp
-  setUpDatabase:
-    handler: src/functions/set_up_database.set_up_database
 
 plugins:
   - serverless-wsgi
@@ -98,16 +106,14 @@ resources:
       Type: AWS::DynamoDB::Table
       Properties:
         AttributeDefinitions:
-          - AttributeName: ClassName
-            AttributeType: S
-          - AttributeName: OpId
-            AttributeType: S
           - AttributeName: UserId
             AttributeType: S
           - AttributeName: RecordId
             AttributeType: S
+          - AttributeName: Date
+            AttributeType: S
         KeySchema:
-          - AttributeName: ClassName
+          - AttributeName: UserId
             KeyType: HASH
           - AttributeName: RecordId
             KeyType: RANGE
@@ -116,23 +122,11 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         LocalSecondaryIndexes:
-          - IndexName: ClassNameUserId
+          - IndexName: UserIdDate
             Projection:
               ProjectionType: ALL
             KeySchema:
-              - AttributeName: ClassName
-                KeyType: HASH
               - AttributeName: UserId
-                KeyType: RANGE
-          - IndexName: ClassNameOpId
-            Projection:
-              ProjectionType: ALL
-            KeySchema:
-              - AttributeName: ClassName
                 KeyType: HASH
-              - AttributeName: OpId
+              - AttributeName: Date
                 KeyType: RANGE
-
-
-
-

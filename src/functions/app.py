@@ -1,6 +1,7 @@
 import os
+import json
 import boto3
-from flask import Flask, jsonify, make_response, request
+from flask import Flask, jsonify, abort, request
 
 from src.utils.response_builder import ResponseBuilder
 from src.utils.validation import Validation
@@ -10,25 +11,14 @@ from src.middleware.token_required import token_required
 from src.middleware.api_key_required import api_key_required
 
 app = Flask(__name__)
+app.config['DEBUG'] = True
 app.json.sort_keys = False
-app.json.mimetype = 'application/vnd.api+json'
-
-API_V1 = "v1"
-
-if os.getenv('FLASK_ENV') == 'development':
-    app.config['DEBUG'] = True
-
-dynamodb_client = boto3.client('dynamodb')
-
-if os.environ.get('IS_OFFLINE'):
-    dynamodb_client = boto3.client(
-        'dynamodb', region_name='localhost', endpoint_url='http://localhost:8000'
-    )
 response_builder = ResponseBuilder(request)
 
 
 @app.route('/api/v1/')
 def index():
+    abort(403, 'LOW_BALANCE', message='Custom Message')
     return 'Welcome to Calc'
 
 
@@ -72,7 +62,7 @@ def get_auth():
         return response_builder.server_error(e, os.getenv('FLASK_ENV'))
 
 
-@app.route('/api/v1/operations')
+@app.route('/api/v1/operations/types')
 @api_key_required
 @token_required
 def get_operations(current_user):
@@ -81,8 +71,25 @@ def get_operations(current_user):
     return response_builder.operation_list(operations)
 
 
+@app.route('/api/v1/operations', methods=['POST'])
+@api_key_required
+@token_required
+def post_operation(current_user):
+    body = request.get_json()
+    errors = Validation.validate_operation(body)
+    service = OperationsService(os.getenv('USER_INITIAL_BALANCE'))
+    if len(errors):
+        return response_builder.validation_errors(errors)
+
+    operation_created = service.create_operation(body['data'], current_user['Username'])
+
+    return response_builder.create_operation(operation_created[0])
+
+
 @app.errorhandler(404)
 def resource_not_found(e):
+    if e.description == 'OPERATION_NOT_FOUND':
+        return response_builder.not_found('Operation "operation_id" not found')
     return response_builder.not_found('Path not found in API')
 
 
@@ -97,3 +104,9 @@ def invalid_token(e):
         return response_builder.invalid_token()
     if e.description == 'NO_API_KEY':
         return response_builder.invalid_api_key()
+    return response_builder.forbidden(e)
+
+
+@app.errorhandler(400)
+def bad_request(e):
+    return response_builder.bad_request(e)

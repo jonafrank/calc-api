@@ -1,34 +1,25 @@
-import os
-
-import boto3
+import json
+from flask import abort
 from src.model.operation import Operation
 
 
 class OperationRepository:
-    CLASS_NAME = 'Operation'
+    @staticmethod
+    def get_operations():
+        # ops = json.load('../data/operations.json')
+        with open('src/data/operations.json') as operation_file:
+            ops = json.load(operation_file)
+        result = []
+        for op in ops:
+            result.append(Operation(op['type'], op['cost'], op['id']))
+        return result
 
-    def __init__(self):
-        self.client = boto3.client('dynamodb')
-        self.table_name = os.getenv('CALC_TABLE')
+    @staticmethod
+    def get_operation(operation_id):
+        with open('src/data/operations.json') as operation_file:
+            ops = json.load(operation_file)
+        for op in ops:
+            if op['id'] == operation_id:
+                return Operation(op['type'], op['cost'], op['id'])
+        abort(404, 'OPERATION_NOT_FOUND')
 
-    def get_operations(self):
-        response = self.client.query(
-            TableName=self.table_name,
-            Select='SPECIFIC_ATTRIBUTES',
-            ProjectionExpression='OpId,OperationType,OperationCost',
-            ExpressionAttributeValues={
-                ':class': {
-                    'S': self.CLASS_NAME
-                }
-            },
-            KeyConditionExpression='ClassName = :class'
-        )
-        print(response)
-        collection = []
-        for item in response['Items']:
-            collection.append(Operation(
-                item['OperationType']['S'],
-                int(item['OperationCost']['N']),
-                item['OpId']['S']
-            ))
-        return sorted(collection, key=lambda operation: operation.cost)

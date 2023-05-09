@@ -94,3 +94,19 @@ class TestUserService(TestCase):
             'UserEmail': mock_body['data']['username']
         }
         self.assertEqual(result, expected_result)
+
+    @mock.patch('src.services.users.boto3.client')
+    def test_get_user(self, mock_boto_client):
+        mock_client = mock.Mock()
+        mock_boto_client.return_value = mock_client
+
+        mock_client.get_user.return_value = {
+            'Username': 'Fake-Username'
+        }
+        user_service = UserService()
+        result = user_service.get_user('fake.token')
+        expected_result = {
+            'Username': 'Fake-Username'
+        }
+        mock_client.get_user.assert_called_once_with(AccessToken='fake.token')
+        self.assertEqual(result, expected_result)

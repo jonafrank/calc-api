@@ -194,3 +194,52 @@ class ResponseBuilder:
         resp.status_code = 401
         resp.headers['Content-Type'] = self.content_type
         return resp
+
+    def forbidden(self, e):
+        body = {
+            'errors': [
+                {
+                    'status': 403,
+                    'title': e.description,
+                    'detail': 'X-Api-Key Header missing'
+                }
+            ]
+        }
+        resp = make_response(body)
+        resp.status_code = 403
+        resp.headers['Content-Type'] = self.content_type
+        return resp
+
+    def bad_request(self, e):
+        body = {
+            'errors': [
+                {
+                    'status': 400,
+                    'title': e.description,
+                    'detail': 'X-Api-Key Header missing'
+                }
+            ]
+        }
+        resp = make_response(body)
+        resp.status_code = 400
+        resp.headers['Content-Type'] = self.content_type
+        return resp
+
+    def create_operation(self, result):
+        body = {
+            'data': {
+                'type': 'operations',
+                'id': result['record_id'],
+                'attributes': {
+                    'operation_id': result['operation_id'],
+                    'user_id': result['user_id'],
+                    'amount': result['amount'],
+                    'user_balance': result['user_balance'],
+                    'operation_response': result['operation_response'],
+                    'date': str(result['date'])
+                }
+            }
+        }
+        resp = make_response(body)
+        resp.headers['Content-Type'] = self.content_type
+        return resp

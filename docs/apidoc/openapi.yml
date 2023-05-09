@@ -63,7 +63,7 @@ paths:
         401:
           description: Unauthorized
 
-  /operations:
+  /operations/types:
     get:
       summary: Retrieves a list of valid operations.
       security:
@@ -159,8 +159,7 @@ components:
               type:
                 type: string
               id:
-                type:
-                  string
+                type: integer
               attributes:
                 type: object
                 properties:
