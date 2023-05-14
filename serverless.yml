@@ -48,6 +48,15 @@ provider:
           Action:
             - secretsmanager:GetSecretValue
           Resource: ${env:SECRET_ARN}
+        - Effect: Allow
+          Action:
+            - es:ESHttpPost
+            - es:ESHttpPut
+            - dynamodb:DescribeStream
+            - dynamodb:GetRecords
+            - dynamodb:GetShardIterator
+            - dynamodb:ListStreams
+          Resource: "*"
 
 functions:
   api:

@@ -65,3 +65,19 @@ class TestValidation(TestCase):
             }
         ]
         self.assertEqual(result, expected)
+
+    def test_validate_operation_no_data(self):
+        body = {}
+        result = Validation.validate_operation(body)
+        expected = [
+            {
+                'status': 400,
+                'title': 'Bad Request',
+                'detail': 'Post Record should Follow the JSONApi Standard and put the info inside a \"data\" object',
+                'meta': {
+                    'json_api_link': "https://jsonapi.org/format/#crud-creating"
+                }
+            }
+        ]
+
+        self.assertEqual(result, expected)

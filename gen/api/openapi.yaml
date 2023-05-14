@@ -1,0 +1,302 @@
+openapi: 3.0.3
+info:
+  description: Calc api for truenorth challenge
+  title: Calc API
+  version: 1.0.0
+servers:
+- description: The server for the API
+  url: https://pbqnjc55c3.execute-api.us-east-1.amazonaws.com/{basePath}
+  variables:
+    basePath:
+      default: api/v1
+paths:
+  /users:
+    post:
+      parameters:
+      - description: Api Key provided in order to integrate Apps
+        explode: false
+        in: header
+        name: X-Api-Key
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        description: User to Add to the system
+      responses:
+        "201":
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/UserCreated'
+          description: Created
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+      summary: Creates a New User
+      x-contentType: application/vnd.api+json
+      x-accepts: application/vnd.api+json
+  /users/tokens:
+    post:
+      parameters:
+      - description: Api Key provided in order to integrate Apps
+        explode: false
+        in: header
+        name: X-Api-Key
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      responses:
+        "201":
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/LoginSuccess'
+          description: Success
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+      summary: Creates a new Access Token for authenticated requests.
+      x-contentType: application/vnd.api+json
+      x-accepts: application/vnd.api+json
+  /operations/types:
+    get:
+      parameters:
+      - description: Api Key provided in order to integrate Apps
+        explode: false
+        in: header
+        name: X-Api-Key
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/OperationsSuccess'
+          description: Success
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+      security:
+      - JWT: []
+      summary: Retrieves a list of valid operations.
+      x-accepts: application/vnd.api+json
+  /operations:
+    post:
+      parameters:
+      - description: Api Key provided in order to integrate Apps
+        explode: false
+        in: header
+        name: X-Api-Key
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/CreateOperation'
+      responses:
+        "201":
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/OperationResult'
+          description: Created
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "400":
+          description: Bad Request
+      security:
+      - JWT: []
+      summary: Perform a new Operation.
+      x-contentType: application/vnd.api+json
+      x-accepts: application/vnd.api+json
+  /records:
+    get:
+      parameters:
+      - description: Api Key provided in order to integrate Apps
+        explode: false
+        in: header
+        name: X-Api-Key
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/RecordResult'
+          description: Success
+      security:
+      - JWT: []
+      summary: Get List of Records
+      x-accepts: application/vnd.api+json
+components:
+  schemas:
+    RecordResult:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/RecordResult_data'
+          required:
+          - data
+          type: array
+      type: object
+    OperationResult:
+      properties:
+        data:
+          $ref: '#/components/schemas/RecordResult_data'
+      type: object
+    CreateOperation:
+      properties:
+        data:
+          $ref: '#/components/schemas/CreateOperation_data'
+      type: object
+    UserRequest:
+      properties:
+        data:
+          $ref: '#/components/schemas/UserRequest_data'
+      type: object
+    UserCreated:
+      properties:
+        data:
+          $ref: '#/components/schemas/UserCreated_data'
+      type: object
+    LoginSuccess:
+      properties:
+        data:
+          $ref: '#/components/schemas/LoginSuccess_data'
+      type: object
+    OperationsSuccess:
+      properties:
+        data:
+          items:
+            properties:
+              type:
+                type: string
+              id:
+                type: integer
+              attributes:
+                properties:
+                  type:
+                    type: string
+                  cost:
+                    type: integer
+                type: object
+          type: array
+      type: object
+    RecordResult_attributes:
+      properties:
+        operation_id:
+          type: integer
+        user_id:
+          type: string
+        amount:
+          type: integer
+        user_balance:
+          type: integer
+        operation_response:
+          oneOf:
+          - type: integer
+          - type: string
+        date:
+          type: string
+      type: object
+    RecordResult_data:
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        attributes:
+          $ref: '#/components/schemas/RecordResult_attributes'
+      type: object
+    CreateOperation_data_attributes:
+      properties:
+        operation_id:
+          type: integer
+        operands:
+          items:
+            type: integer
+          maxItems: 2
+          minItems: 1
+          type: array
+      type: object
+    CreateOperation_data:
+      properties:
+        type:
+          type: string
+        attributes:
+          $ref: '#/components/schemas/CreateOperation_data_attributes'
+      type: object
+    UserRequest_data:
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      type: object
+    UserCreated_data_attributes:
+      properties:
+        username:
+          type: string
+        status:
+          type: string
+      type: object
+    UserCreated_data:
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        attributes:
+          $ref: '#/components/schemas/UserCreated_data_attributes'
+      type: object
+    LoginSuccess_data_attributes:
+      properties:
+        access_token:
+          type: string
+        expires_in:
+          type: integer
+      type: object
+    LoginSuccess_data:
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        attributes:
+          $ref: '#/components/schemas/LoginSuccess_data_attributes'
+      type: object
+  securitySchemes:
+    JWT:
+      bearerFormat: Bearer
+      description: Access token provided by POST /users/tokens
+      scheme: bearer
+      type: http
+

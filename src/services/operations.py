@@ -1,6 +1,7 @@
 import random
 import string
 import uuid
+import os
 
 from flask import abort
 from math import sqrt
@@ -10,18 +11,19 @@ from src.model.record import Record
 
 
 class OperationsService:
-    def __init__(self, initial_balance):
+    def __init__(self):
         self.repo = OperationRepository()
         self.records_repo = RecordRepository()
-        self.initial_balance = initial_balance
+        self.initial_balance = os.getenv('USER_INITIAL_BALANCE')
 
     def get_operations(self):
         return self.repo.get_operations()
 
     def create_operation(self, data, user_id):
         last_record = self.records_repo.get_last_record(user_id)
+        print('LAST RECORD', last_record)
         user_balance = int(self.initial_balance)
-        if last_record:
+        if len(last_record['Items']):
             user_balance = int(last_record['Items'][0]['UserBalance']['N'])
         operands = data['attributes']['operands']
         operation = self.repo.get_operation(data['attributes']['operation_id'])

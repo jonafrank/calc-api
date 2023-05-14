@@ -7,6 +7,7 @@ from src.utils.response_builder import ResponseBuilder
 from src.utils.validation import Validation
 from src.services.users import UserService
 from src.services.operations import OperationsService
+from src.services.records import RecordsService
 from src.middleware.token_required import token_required
 from src.middleware.api_key_required import api_key_required
 
@@ -77,13 +78,21 @@ def get_operations(current_user):
 def post_operation(current_user):
     body = request.get_json()
     errors = Validation.validate_operation(body)
-    service = OperationsService(os.getenv('USER_INITIAL_BALANCE'))
+    service = OperationsService()
     if len(errors):
         return response_builder.validation_errors(errors)
 
     operation_created = service.create_operation(body['data'], current_user['Username'])
 
     return response_builder.create_operation(operation_created[0])
+
+
+@app.route('/api/v1/records')
+@api_key_required
+@token_required
+def get_records(current_user):
+    service = RecordsService()
+    return jsonify(service.get_records(current_user['Username']))
 
 
 @app.errorhandler(404)
