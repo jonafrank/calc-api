@@ -1,8 +1,6 @@
 import os
-import json
-import boto3
 from flask import Flask, jsonify, abort, request
-
+from flask_cors import CORS
 from src.utils.response_builder import ResponseBuilder
 from src.utils.validation import Validation
 from src.services.users import UserService
@@ -12,6 +10,7 @@ from src.middleware.token_required import token_required
 from src.middleware.api_key_required import api_key_required
 
 app = Flask(__name__)
+CORS(app)
 app.config['DEBUG'] = True
 app.json.sort_keys = False
 response_builder = ResponseBuilder(request)
